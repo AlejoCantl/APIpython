@@ -39,8 +39,13 @@ class CitaController:
             self.model.rechazar_cita(cita_id, razon, profesional_id)
             return {"mensaje": "Cita rechazada", "razon": razon}
 
-    def get_historial_medico(self, nombre: Optional[str], identificacion: Optional[str], usuario_id: Optional[int], fecha: Optional[str] | None = None, rango: str | None = None) -> dict:
+    def get_historial_medico(self, nombre: Optional[str] = None, identificacion: Optional[str] = None, usuario_id: Optional[int] = None, fecha: Optional[str] = None, rango: Optional[str] = None) -> dict:
         historial = self.model.get_historial_paciente(nombre, identificacion, usuario_id, fecha, rango)
+        #for item in historial:
+            #doc_diag = nlp(item["diagnostico"] or "")
+            #doc_rec = nlp(item["recomendaciones"] or "")
+            #item["diagnostico_tokens"] = [token.text for token in doc_diag]
+            #item["recomendaciones_entidades"] = [(ent.text, ent.label_) for ent in doc_rec.ents]
         return {"historial": historial}
 
     def registrar_atencion(self, paciente_id: int, medico_id: int, sintomas: str, diagnostico: str, recomendaciones: str) -> dict:
