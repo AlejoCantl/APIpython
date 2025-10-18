@@ -17,7 +17,7 @@ class UsuarioModel:
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
 
-    def get_user_profile(self, usuario_id: int) -> Optional[Dict[str, Any]]:
+    def get_user_profile(self, usuario_id: int, rol_id: int) -> Optional[Dict[str, Any]]:
         try:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
@@ -28,6 +28,7 @@ class UsuarioModel:
                 WHERE u.id = %s
             """, (usuario_id,))
             user_data = cursor.fetchone()
+            user_data["rol_id"] = rol_id  # Añadir rol_id para uso posterior
             return user_data
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
@@ -130,9 +131,9 @@ class UsuarioModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                SELECT c.id, c.fecha, u.nombre || ' ' || u.apellido AS paciente, c.motivo
+                SELECT c.id, c.fecha_cita AS fecha, u.nombre || ' ' || u.apellido AS paciente
                 FROM cita c
-                JOIN usuario u ON c.paciente_id = u.id
+                JOIN usuario u ON c.usuario_paciente_id = u.id
                 WHERE c.estado = 'Pendiente'
             """
             cursor.execute(query)
@@ -170,18 +171,18 @@ class UsuarioModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT c.fecha, c.motivo, a.diagnostico, a.recomendaciones
+                    SELECT c.fecha_cita AS fecha, a.diagnostico, a.recomendaciones
                     FROM cita c
                 LEFT JOIN atencion a ON c.id = a.cita_id
                 WHERE c.paciente_id = %s AND c.estado = 'Atendida'
             """
                 params = [usuario_id]
                 if fecha:
-                    query += " AND c.fecha = %s"
+                    query += " AND c.fecha_cita= %s"
                     params.append(fecha)
                 elif rango:
                     start, end = rango.split(" al ")
-                    query += " AND c.fecha BETWEEN %s AND %s"
+                    query += " AND c.fecha_cita BETWEEN %s AND %s"
                     params.extend([start, end])
                 cursor.execute(query, params)
                 result = cursor.fetchall()
@@ -202,7 +203,7 @@ class UsuarioModel:
                         enfermedades = EXCLUDED.enfermedades, tipo_paciente = EXCLUDED.tipo_paciente
                 """
                 cursor.execute(query, (usuario_id, datos["peso"], datos["altura"], datos["enfermedades"], datos.get("tipo_paciente", "Limitante")))
-                result = cursor.commit()
+                result = conn.commit()
                 return result
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
@@ -213,11 +214,11 @@ class UsuarioModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                    INSERT INTO atencion (paciente_id, medico_id, sintomas, diagnostico, recomendaciones)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO historial_medico (paciente_id, medico_id, diagnostico, recomendaciones)
+                    VALUES (%s, %s, %s, %s)
                     RETURNING id
                 """
-                cursor.execute(query, (paciente_id, medico_id, sintomas, diagnostico, recomendaciones))
+                cursor.execute(query, (paciente_id, medico_id, diagnostico, recomendaciones))
                 conn.commit()
             # Actualizar estado de la cita a 'Atendida' si existe
                 cita_query = "UPDATE cita SET estado = 'Atendida' WHERE id = (SELECT cita_id FROM atencion WHERE id = %s)"

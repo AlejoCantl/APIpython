@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordBearer
+#from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from controllers.usuarioController import UsuarioController
 from utils.auth import decode_access_token
 
 router = APIRouter()
 controller = UsuarioController()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 class LoginRequest(BaseModel):
     nombre_usuario: str
