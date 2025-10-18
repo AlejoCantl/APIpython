@@ -1,4 +1,5 @@
 from models.cita import CitaModel
+from typing import Optional
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 
@@ -38,10 +39,14 @@ class CitaController:
             self.model.rechazar_cita(cita_id, razon, profesional_id)
             return {"mensaje": "Cita rechazada", "razon": razon}
 
-    def get_historial_medico(self, paciente_id: int) -> dict:
-        historial = self.model.get_historial_paciente(paciente_id)
+    def get_historial_medico(self, nombre: Optional[str], identificacion: Optional[str], usuario_id: Optional[int], fecha: Optional[str] | None = None, rango: str | None = None) -> dict:
+        historial = self.model.get_historial_paciente(nombre, identificacion, usuario_id, fecha, rango)
         return {"historial": historial}
 
     def registrar_atencion(self, paciente_id: int, medico_id: int, sintomas: str, diagnostico: str, recomendaciones: str) -> dict:
         atencion_id = self.model.registrar_atencion(paciente_id, medico_id, sintomas, diagnostico, recomendaciones)
         return {"mensaje": "Atención registrada", "atencion_id": atencion_id}
+
+    def get_detalle_cita(self, cita_id: int) -> dict:
+        detalles = self.model.get_detalle_cita(cita_id)
+        return {"detalle_cita": detalles}

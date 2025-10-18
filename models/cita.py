@@ -1,5 +1,5 @@
 import psycopg2
-from typing import List, Dict
+from typing import List, Dict, Optional
 from utils.db import db
 
 class CitaModel:
@@ -9,12 +9,13 @@ class CitaModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT c.id, c.fecha, u.nombre || ' ' || u.apellido AS medico,
-                           c.estado, c.motivo
+                SELECT c.id, c.fecha_cita, c.hora_cita, u.nombre || ' ' || u.apellido AS medico,
+                       c.estado, c.motivo, e.nombre AS especialidad
                 FROM cita c
-                JOIN usuario u ON c.medico_id = u.id
-                WHERE c.paciente_id = %s
-            """
+                JOIN usuario u ON c.usuario_medico_id = u.id
+                JOIN especialidad e ON c.especialidad_id = e.id
+                WHERE c.usuario_paciente_id = %s
+                """
             cursor.execute(query, (usuario_id,))
             return cursor.fetchall()
         except psycopg2.Error as e:
@@ -37,10 +38,10 @@ class CitaModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
             query = """
-                INSERT INTO cita (paciente_id, medico_id, fecha, motivo, estado)
-                VALUES (%s, %s, %s, %s, 'Pendiente')
+                INSERT INTO cita (usuario_paciente_id, usuario_medico_id, especialidad_id, fecha_cita, hora_cita, estado)
+                VALUES (%s, %s, %s, %s, %s, 'Pendiente')
                 RETURNING id
-            """
+                """
             cursor.execute(query, (paciente_id, medico_id, fecha, motivo))
             conn.commit()
             return cursor.fetchone()["id"]
@@ -57,7 +58,7 @@ class CitaModel:
                 FROM cita c
                 JOIN usuario u ON c.usuario_paciente_id = u.id
                 WHERE c.estado = 'Pendiente'
-            """
+                """
             cursor.execute(query)
             return cursor.fetchall()
         except psycopg2.Error as e:
@@ -86,19 +87,26 @@ class CitaModel:
                 return cursor.rowcount > 0
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
-        
-    def get_historial_paciente(self, usuario_id: int, fecha: str | None = None, rango: str | None = None) -> List[Dict]:
+
+    def get_historial_paciente(self, nombre: Optional[str], identificacion: Optional[str], usuario_id: Optional[int], fecha: Optional[str] | None = None, rango: str | None = None) -> List[Dict]:
         """Obtiene el historial de citas de un paciente."""
         try:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT c.fecha_cita AS fecha, a.diagnostico, a.recomendaciones
-                    FROM cita c
-                LEFT JOIN atencion a ON c.id = a.cita_id
-                WHERE c.paciente_id = %s AND c.estado = 'Atendida'
-            """
+                SELECT c.fecha_cita AS fecha, c.hora_cita, h.diagnostico, h.recomendaciones, h.sistemas
+                FROM cita c
+                JOIN historial_medico h ON c.id = h.cita_id
+                JOIN usuario u ON c.usuario_paciente_id = u.id
+                WHERE c.estado = 'Atendida'
+                """
                 params = [usuario_id]
+                if nombre:
+                    query += " AND (u.nombre ILIKE %s OR u.apellido ILIKE %s)"
+                    params.extend([f"%{nombre}%", f"%{nombre}%"])
+                if identificacion:
+                    query += " AND u.identificacion = %s"
+                    params.append(identificacion)
                 if fecha:
                     query += " AND c.fecha_cita= %s"
                     params.append(fecha)
@@ -123,7 +131,7 @@ class CitaModel:
                     ON CONFLICT (usuario_id) DO UPDATE
                     SET peso = EXCLUDED.peso, altura = EXCLUDED.altura, 
                         enfermedades = EXCLUDED.enfermedades, tipo_paciente = EXCLUDED.tipo_paciente
-                """
+                    """
                 cursor.execute(query, (usuario_id, datos["peso"], datos["altura"], datos["enfermedades"], datos.get("tipo_paciente", "Limitante")))
                 result = conn.commit()
                 return result
@@ -136,9 +144,9 @@ class CitaModel:
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 query = """
-                    INSERT INTO historial_medico (paciente_id, medico_id, diagnostico, recomendaciones)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id
+                INSERT INTO historial_medico (cita_id, sistemas, diagnostico, recomendaciones)
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
                 """
                 cursor.execute(query, (paciente_id, medico_id, diagnostico, recomendaciones))
                 conn.commit()
@@ -147,5 +155,23 @@ class CitaModel:
                 cursor.execute(cita_query, (cursor.fetchone()["id"],))
                 conn.commit()
                 return cursor.fetchone()["id"]
+        except psycopg2.Error as e:
+            raise Exception(f"Error en la base de datos: {e}")
+        
+    def get_detalle_cita(self, cita_id: int) -> Dict:
+        """Obtiene el detalle de una cita específica."""
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                query = """
+                SELECT u.nombre, u.apellido, u.correo, u.identificacion, u.direccion, u.ciudad, u.pais,
+                    p.tipo_paciente, p.peso, p.altura, p.enfermedades
+                FROM cita c
+                JOIN usuario u ON c.usuario_paciente_id = u.id
+                JOIN paciente p ON u.id = p.usuario_id
+                WHERE c.id = %s
+                """
+            cursor.execute(query, (cita_id,))
+            return cursor.fetchone() or {}
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
