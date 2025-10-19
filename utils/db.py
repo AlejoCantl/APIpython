@@ -47,13 +47,23 @@ class Database:
                 self._reset_pool()
         raise Exception("No se pudo obtener una conexión válida tras varios intentos.")
 
-    def _reset_pool(self):
-        """Reinicia el pool de conexiones."""
-        try:
-            self.close_all()
-            self._initialize_pool()
-        except Exception as e:
-            print(f"Error al reiniciar el pool: {e}")
+    # ✅ AGREGAR CONTEXT MANAGER
+    def get_connection_context(self):
+        """Context manager que automáticamente devuelve la conexión al pool"""
+        class ConnectionContext:
+            def __init__(self, db):
+                self.db = db
+                self.conn = None
+            
+            def __enter__(self):
+                self.conn = self.db.get_connection()
+                return self.conn
+            
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                if self.conn:
+                    self.db.release_connection(self.conn)
+        
+        return ConnectionContext(self)
 
     def release_connection(self, conn):
         """Devuelve la conexión al pool."""
@@ -61,6 +71,14 @@ class Database:
             self.pool.putconn(conn)
         except psycopg2.InterfaceError:
             print("Conexión ya cerrada, ignorando devolución.")
+
+    def _reset_pool(self):
+        """Reinicia el pool de conexiones."""
+        try:
+            self.close_all()
+            self._initialize_pool()
+        except Exception as e:
+            print(f"Error al reiniciar el pool: {e}")
 
     def close_all(self):
         """Cierra todas las conexiones del pool."""

@@ -5,7 +5,7 @@ from utils.db import db
 class UsuarioModel:
     def authenticate(self, nombre_usuario: str, contrasena: str) -> Optional[Dict[str, Any]]:
         try:
-            with db.get_connection() as conn:
+            with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
                     SELECT id, rol_id, contrasena
@@ -19,10 +19,10 @@ class UsuarioModel:
 
     def get_user_profile(self, usuario_id: int, rol_id: int) -> Optional[Dict[str, Any]]:
         try:
-            with db.get_connection() as conn:
+            with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT u.nombre, u.apellido, u.correo, u.identificacion, r.nombre AS rol
+                    SELECT u.nombre, u.apellido, u.correo, u.identificacion, u.edad, r.nombre AS rol, u.direccion || ', ' || u.ciudad || ', ' || u.pais AS ubicacion
                     FROM usuario u
                     JOIN rol r ON u.rol_id = r.id
                 WHERE u.id = %s
@@ -36,10 +36,10 @@ class UsuarioModel:
     def get_paciente_data(self, usuario_id: int) -> Dict:
         """Obtiene datos específicos del paciente."""
         try:
-            with db.get_connection() as conn:
+            with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT peso, altura, enfermedades, tipo_paciente
+                    SELECT peso, talla, enfermedades, tipo_paciente
                     FROM paciente
                     WHERE usuario_id = %s
                 """
@@ -52,7 +52,7 @@ class UsuarioModel:
     def get_medico_data(self, usuario_id: int) -> Dict:
         """Obtiene datos específicos del médico."""
         try:
-            with db.get_connection() as conn:
+            with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
                     SELECT especialidad, consultorio
@@ -68,7 +68,7 @@ class UsuarioModel:
     def get_profesional_data(self, usuario_id: int) -> Dict:
         """Obtiene datos específicos del profesional de apoyo."""
         try:
-            with db.get_connection() as conn:
+            with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
                     SELECT cargo, fecha_ingreso

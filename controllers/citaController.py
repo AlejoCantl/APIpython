@@ -11,6 +11,12 @@ class CitaController:
         citas = self.model.get_citas_paciente(usuario_id)
         return {"citas": citas}
 
+    def get_proxima_cita(self, usuario_id: int) -> dict:
+        proxima_cita = self.model.get_proxima_cita(usuario_id)
+        if not proxima_cita:
+            raise HTTPException(status_code=204, detail="No hay próxima cita encontrada")
+        return {"proxima_cita": proxima_cita}
+
     def crear_cita(self, usuario_id: int, medico_id: int, fecha: str, motivo: str) -> dict:
         ultima_cita = self.model.get_ultima_cita(usuario_id)
         if ultima_cita and (datetime.fromisoformat(fecha) - ultima_cita["fecha"]) < timedelta(days=15):

@@ -14,6 +14,8 @@ class UserProfile(BaseModel):
     nombre: str
     apellido: str
     correo: str
+    edad: int
+    ubicacion: str
     identificacion: str
     rol: str
     datos_especificos: dict
