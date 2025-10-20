@@ -26,7 +26,15 @@ class CitaModel:
         try:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
-                query = "SELECT fecha FROM cita WHERE paciente_id = %s ORDER BY fecha DESC LIMIT 1"
+                query = """SELECT c.fecha_cita AS fecha, u2.nombre || ' ' || u2.apellido AS medico, c.hora_cita, 
+                           h.diagnostico, h.recomendaciones, h.sistema, e.nombre AS especialidad
+                    FROM cita c
+                    JOIN historial_medico h ON c.id = h.cita_id
+                    JOIN especialidad e ON c.especialidad_id = e.id
+                    JOIN usuario u ON c.usuario_paciente_id = u.id
+                    JOIN usuario u2 ON c.usuario_medico_id = u2.id
+                    WHERE c.estado = 'Atendida' AND c.usuario_paciente_id = %s
+                    ORDER BY fecha DESC LIMIT 1"""
                 cursor.execute(query, (usuario_id,))
                 return cursor.fetchone() or {}
         except psycopg2.Error as e:
@@ -70,9 +78,10 @@ class CitaModel:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                SELECT c.id, c.fecha_cita, c.hora_cita, u.nombre || ' ' || u.apellido AS medico
+                SELECT c.id, c.fecha_cita, c.hora_cita, u.nombre || ' ' || u.apellido AS medico, e.nombre AS especialidad, c.estado
                 FROM cita c
                 JOIN usuario u ON c.usuario_medico_id = u.id
+                JOIN especialidad e ON c.especialidad_id = e.id
                 WHERE c.usuario_paciente_id = %s AND c.estado = 'Aprobada' AND c.fecha_cita >= CURRENT_DATE
                 ORDER BY c.fecha_cita ASC
                 LIMIT 1

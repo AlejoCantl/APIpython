@@ -61,3 +61,9 @@ class CitaController:
     def get_detalle_cita(self, cita_id: int) -> dict:
         detalles = self.model.get_detalle_cita(cita_id)
         return {"detalle_cita": detalles}
+    
+    def get_ultima_cita(self, usuario_id: int) -> dict:
+        ultima_cita = self.model.get_ultima_cita(usuario_id)
+        if not ultima_cita:
+            raise HTTPException(status_code=204, detail="No hay última cita encontrada")
+        return {"ultima_cita": ultima_cita}

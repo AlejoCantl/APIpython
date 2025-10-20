@@ -31,6 +31,12 @@ async def get_proxima_cita(current_user: dict = Depends(decode_access_token)):
         raise HTTPException(status_code=403, detail="Solo pacientes pueden ver su próxima cita")
     return cita_controller.get_proxima_cita(current_user["usuario_id"])
 
+@router.get("/citas/ultima", response_model=dict)
+async def get_ultima_cita(current_user: dict = Depends(decode_access_token)):
+    if current_user["rol_id"] != 1:
+        raise HTTPException(status_code=403, detail="Solo pacientes pueden ver su última cita")
+    return cita_controller.get_ultima_cita(current_user["usuario_id"])
+
 @router.post("/citas", response_model=dict)
 async def crear_cita_paciente(request: CitaRequest, current_user: dict = Depends(decode_access_token)):
     if current_user["rol_id"] != 1:
