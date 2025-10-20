@@ -24,7 +24,7 @@ class CitaController:
         cita_id = self.model.crear_cita(usuario_id, medico_id, fecha, motivo)
         return {"mensaje": "Cita pendiente de aprobación", "cita_id": cita_id}
 
-    def get_historial_paciente(self, usuario_id: int, fecha: str | None = None, rango: str | None = None) -> dict:
+    def get_historial_paciente(self, usuario_id: int, fecha: Optional[str] = None, rango: Optional[str] = None) -> dict:
         historial = self.model.get_historial_paciente(usuario_id, fecha, rango)
         return {"historial": historial}
 
@@ -46,7 +46,7 @@ class CitaController:
             return {"mensaje": "Cita rechazada", "razon": razon}
 
     def get_historial_medico(self, nombre: Optional[str] = None, identificacion: Optional[str] = None, usuario_id: Optional[int] = None, fecha: Optional[str] = None, rango: Optional[str] = None) -> dict:
-        historial = self.model.get_historial_paciente(nombre, identificacion, usuario_id, fecha, rango)
+        historial = self.model.get_historial_medico(nombre, identificacion, usuario_id, fecha, rango)
         #for item in historial:
             #doc_diag = nlp(item["diagnostico"] or "")
             #doc_rec = nlp(item["recomendaciones"] or "")

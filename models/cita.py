@@ -106,41 +106,85 @@ class CitaModel:
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
 
-    def get_historial_paciente(self, nombre: Optional[str] = None, identificacion: Optional[str] = None, usuario_id: Optional[int] = None, fecha: Optional[str] = None, rango: Optional[str] = None) -> List[Dict]:
+    def get_historial_paciente(self, usuario_id: int, fecha: Optional[str] = None, rango: Optional[str] = None) -> List[Dict]:
         """Obtiene el historial de citas de un paciente."""
         try:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT c.fecha_cita AS fecha, c.hora_cita, h.diagnostico, h.recomendaciones, h.sistemas
+                    SELECT c.fecha_cita AS fecha, u2.nombre || ' ' || u2.apellido AS medico, c.hora_cita, 
+                           h.diagnostico, h.recomendaciones, h.sistema, e.nombre AS especialidad
                     FROM cita c
                     JOIN historial_medico h ON c.id = h.cita_id
+                    JOIN especialidad e ON c.especialidad_id = e.id
                     JOIN usuario u ON c.usuario_paciente_id = u.id
-                    WHERE c.estado = 'Atendida'
+                    JOIN usuario u2 ON c.usuario_medico_id = u2.id
+                    WHERE c.estado = 'Atendida' AND c.usuario_paciente_id = %s
                 """
-                params = []
-                if usuario_id:
-                    query += " AND c.usuario_paciente_id = %s"
-                    params.append(usuario_id)
+                params = [usuario_id]
+                if fecha and not rango:
+                    query += " AND c.fecha_cita = %s"
+                    params.append(fecha)
+                elif rango and not fecha:
+                    start, end = rango.split(" al ")
+                    query += " AND c.fecha_cita BETWEEN %s AND %s"
+                    params.extend([start, end])
+                else:
+                    if fecha and rango:
+                        raise ValueError("No se pueden usar 'fecha' y 'rango' simultáneamente")
+                query += " ORDER BY c.fecha_cita DESC"
+                print(f"Query (paciente): {query}")
+                print(f"Params (paciente): {params}")
+                cursor.execute(query, params)
+                result = cursor.fetchall()
+                print(f"Result (paciente): {result}")
+                return result
+        except psycopg2.Error as e:
+            raise Exception(f"Error en la base de datos: {e}")
+        except ValueError as e:
+            raise Exception(f"Error en los parámetros: {e}")
+
+    def get_historial_medico(self, usuario_id: int, nombre: Optional[str] = None, identificacion: Optional[str] = None, fecha: Optional[str] = None, rango: Optional[str] = None) -> List[Dict]:
+        """Obtiene el historial de citas atendidas por un médico."""
+        try:
+            with db.get_connection_context() as conn:
+                cursor = conn.cursor()
+                query = """
+                    SELECT c.fecha_cita AS fecha, u2.nombre || ' ' || u2.apellido AS medico, c.hora_cita, 
+                           h.diagnostico, h.recomendaciones, h.sistema, e.nombre AS especialidad,
+                           u.nombre || ' ' || u.apellido AS paciente
+                    FROM cita c
+                    JOIN historial_medico h ON c.id = h.cita_id
+                    JOIN especialidad e ON c.especialidad_id = e.id
+                    JOIN usuario u ON c.usuario_paciente_id = u.id
+                    JOIN usuario u2 ON c.usuario_medico_id = u2.id
+                    WHERE c.estado = 'Atendida' AND c.usuario_medico_id = %s
+                """
+                params = [usuario_id]
+                if fecha and not rango:
+                    query += " AND c.fecha_cita = %s"
+                    params.append(fecha)
+                elif rango and not fecha:
+                    start, end = rango.split(" al ")
+                    query += " AND c.fecha_cita BETWEEN %s AND %s"
+                    params.extend([start, end])
                 if nombre:
                     query += " AND (u.nombre ILIKE %s OR u.apellido ILIKE %s)"
                     params.extend([f"%{nombre}%", f"%{nombre}%"])
                 if identificacion:
                     query += " AND u.identificacion = %s"
                     params.append(identificacion)
-                if fecha:
-                    query += " AND c.fecha_cita = %s"
-                    params.append(fecha)
-                if rango:
-                    start, end = rango.split(" al ")
-                    query += " AND c.fecha_cita BETWEEN %s AND %s"
-                    params.extend([start, end])
+                query += " ORDER BY c.fecha_cita DESC"
+                print(f"Query (medico): {query}")
+                print(f"Params (medico): {params}")
                 cursor.execute(query, params)
                 result = cursor.fetchall()
-                db.release_connection(conn)
+                print(f"Result (medico): {result}")
                 return result
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
+        except ValueError as e:
+            raise Exception(f"Error en los parámetros: {e}")
         
     def actualizar_datos_paciente(self, usuario_id: int, datos: dict) -> None:
         """Actualiza los datos específicos del paciente."""
