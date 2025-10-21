@@ -1,6 +1,7 @@
 import psycopg2
 from typing import List, Dict, Optional
 from utils.db import db
+import json
 
 class CitaModel:
     def get_citas_paciente(self, usuario_id: int) -> List[Dict]:
@@ -278,18 +279,19 @@ class CitaModel:
                 return cursor.fetchall()
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
-        
-    def guardar_imagen_cita(self, cita_id: int, ruta_imagen: str, tipo_subida: str = "Paciente") -> int:
+
+    def guardar_imagen_cita(self, cita_id: int, ruta_imagen: str, resultado_yolo: dict, tipo_subida: str = "Paciente") -> int:
         """Guarda una imagen asociada a una cita."""
         try:
+            resultado_yolo_json = json.dumps(resultado_yolo)
             with db.get_connection_context() as conn:
                 with conn.cursor() as cursor:
                     query = """
-                        INSERT INTO imagen_cita (cita_id, ruta_imagen, tipo_subida)
-                        VALUES (%s, %s, %s)
+                        INSERT INTO imagen_cita (cita_id, ruta_imagen, resultado_yolo, tipo_subida)
+                        VALUES (%s, %s, %s, %s)
                         RETURNING id
                     """
-                    cursor.execute(query, (cita_id, ruta_imagen, tipo_subida))
+                    cursor.execute(query, (cita_id, ruta_imagen, resultado_yolo_json, tipo_subida))
                     conn.commit()
                     imagen_id = cursor.fetchone()["id"]
                     return imagen_id

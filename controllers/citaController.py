@@ -4,6 +4,7 @@ from fastapi import HTTPException, UploadFile
 from datetime import datetime, timedelta
 import os
 import shutil
+from utils.yolo_roboflow import RoboflowYOLO
 
 IMAGENES_DIR = "static/uploads/citas/"
 class CitaController:
@@ -58,18 +59,21 @@ class CitaController:
             raise HTTPException(status_code=400, detail="Debe haber al menos 15 días entre citas")
         
         # 2. Crear Cita en BD y obtener cita_id
-        # ⚠️ Asegúrate que self.model.crear_cita no espere 'motivo'
+        # ⚠️ Asegúrate que self.model.crear_cita devuelve el ID de la cita creada
         cita_id = self.model.crear_cita(usuario_id, medico_id, fecha, hora, especialidad_id)
-        
+        yolo =  RoboflowYOLO()
+
         # 3. Procesar y guardar las imágenes
         if imagenes:
             for imagen in imagenes:
                 # Guardar en disco
                 ruta_guardada = await self._guardar_imagen_en_disco(imagen)
-                
+                result_yolo = yolo.run_inference(image_path=ruta_guardada)
+                # Parsear resultados
+                result_yolo = yolo.parse_results(result_yolo)
                 # Registrar en BD
                 # ⚠️ Asumo que 'guardar_imagen_cita' registra la ruta en una tabla
-                self.model.guardar_imagen_cita(cita_id, ruta_imagen=ruta_guardada) 
+                self.model.guardar_imagen_cita(cita_id, ruta_imagen=ruta_guardada, resultado_yolo=result_yolo) 
         
         return {"mensaje": "Cita pendiente de aprobación", "cita_id": cita_id}
 
