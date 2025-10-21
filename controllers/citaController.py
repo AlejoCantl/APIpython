@@ -4,7 +4,7 @@ from fastapi import HTTPException, UploadFile
 from datetime import datetime, timedelta
 import os
 import shutil
-import uuid
+
 IMAGENES_DIR = "static/uploads/citas/"
 class CitaController:
     def __init__(self):
@@ -16,8 +16,7 @@ class CitaController:
         """Guarda la imagen en el disco con un nombre seguro y devuelve la ruta."""
         
         # 1. Generar nombre seguro
-        ext = os.path.splitext(imagen.filename)[1] # Obtiene la extensión
-        safe_filename = f"{uuid.uuid4()}{ext}"
+        safe_filename = f"{imagen.filename}"
         file_location = os.path.join(IMAGENES_DIR, safe_filename)
         
         # 2. Guardar eficientemente
