@@ -5,4 +5,4 @@ __pycache__/
 .*env
 myvenv/
 venv/
-static/*
+static/cita_imagenes/
