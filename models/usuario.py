@@ -55,9 +55,10 @@ class UsuarioModel:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT especialidad, consultorio
+                    SELECT e.nombre AS especialidad
                     FROM medico
-                    WHERE usuario_id = %s
+                    JOIN especialidad e ON medico.especialidad_id = e.id
+                    WHERE medico_id = %s
                 """
                 cursor.execute(query, (usuario_id,))
                 medico_data = cursor.fetchone() or {}

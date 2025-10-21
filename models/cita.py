@@ -40,7 +40,7 @@ class CitaModel:
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
 
-    def crear_cita(self, paciente_id: int, medico_id: int, fecha: str, motivo: str) -> int:
+    def crear_cita(self, paciente_id: int, medico_id: int, fecha: str, hora: str, especialidad_id: int) -> Dict:
         """Crea una nueva cita pendiente de aprobación."""
         try:
             with db.get_connection_context() as conn:
@@ -50,7 +50,7 @@ class CitaModel:
                 VALUES (%s, %s, %s, %s, %s, 'Pendiente')
                 RETURNING id
                 """
-            cursor.execute(query, (paciente_id, medico_id, fecha, motivo))
+            cursor.execute(query, (paciente_id, medico_id, especialidad_id, fecha, hora))
             conn.commit()
             return cursor.fetchone()["id"]
         except psycopg2.Error as e:
@@ -250,3 +250,49 @@ class CitaModel:
             return cursor.fetchone() or {}
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
+        
+    def get_especialidades(self) -> List[Dict]:
+        """Obtiene la lista de especialidades médicas."""
+        try:
+            with db.get_connection_context() as conn:
+                cursor = conn.cursor()
+                query = "SELECT id, nombre FROM especialidad"
+                cursor.execute(query)
+                return cursor.fetchall()
+        except psycopg2.Error as e:
+            raise Exception(f"Error en la base de datos: {e}")
+
+    def get_medicos(self , especialidad_id: int) -> List[Dict]:
+        """Obtiene la lista de médicos."""
+        try:
+            with db.get_connection_context() as conn:
+                cursor = conn.cursor()
+                query = """
+                SELECT u.id, u.nombre || ' ' || u.apellido AS nombre_completo
+                FROM medico m
+                JOIN usuario u ON m.medico_id = u.id
+                JOIN especialidad e ON m.especialidad_id = e.id
+                WHERE m.especialidad_id = %s
+                """
+                cursor.execute(query, (especialidad_id,))
+                return cursor.fetchall()
+        except psycopg2.Error as e:
+            raise Exception(f"Error en la base de datos: {e}")
+        
+    def guardar_imagen_cita(self, cita_id: int, ruta_imagen: str, tipo_subida: str = "Paciente") -> int:
+        """Guarda una imagen asociada a una cita."""
+        try:
+            with db.get_connection_context() as conn:
+                with conn.cursor() as cursor:
+                    query = """
+                        INSERT INTO imagen_cita (cita_id, ruta_imagen, tipo_subida)
+                        VALUES (%s, %s, %s)
+                        RETURNING id
+                    """
+                    cursor.execute(query, (cita_id, ruta_imagen, tipo_subida))
+                    conn.commit()
+                    imagen_id = cursor.fetchone()["id"]
+                    return imagen_id
+        except psycopg2.Error as e:
+            raise Exception(f"Error en la base de datos: {e}")
+        

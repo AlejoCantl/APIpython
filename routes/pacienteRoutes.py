@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, Form
 from pydantic import BaseModel
-from typing import Optional
+from typing import Annotated, Optional
 from controllers.usuarioController import UsuarioController
 from controllers.citaController import CitaController
 from utils.auth import decode_access_token
@@ -8,11 +8,6 @@ from utils.auth import decode_access_token
 router = APIRouter()
 usuario_controller = UsuarioController()
 cita_controller = CitaController()
-
-class CitaRequest(BaseModel):
-    medico_id: int
-    fecha: str
-    motivo: str
 
 class DatosEspecificosRequest(BaseModel):
     peso: float
@@ -38,21 +33,45 @@ async def get_ultima_cita(current_user: dict = Depends(decode_access_token)):
     return cita_controller.get_ultima_cita(current_user["usuario_id"])
 
 @router.post("/citas", response_model=dict)
-async def crear_cita_paciente(request: CitaRequest, current_user: dict = Depends(decode_access_token)):
+async def crear_cita_paciente(
+    medico_id: Annotated[int, Form()],
+    fecha: Annotated[str, Form()],
+    hora: Annotated[str, Form()],
+    especialidad_id: Annotated[Optional[int], Form()] = None, 
+    
+    # Archivos (Multipart File)
+    imagenes: Annotated[list[UploadFile], File()] = [], current_user: dict = Depends(decode_access_token)):
+    print("📥 Datos recibidos:")
+    print(f"  medico_id: {medico_id}")
+    print(f"  fecha: {fecha}")
+    print(f"  hora: {hora}")
+    print(f"  especialidad: {especialidad_id}")
+    print(f"  imagenes: {len(imagenes) if imagenes else 0}")
+
+    # Procesar imágenes si las hay
+    if imagenes:
+        for imagen in imagenes:
+            print(f"  📷 Imagen: {imagen.filename} ({imagen.size} bytes)")
     if current_user["rol_id"] != 1:
         raise HTTPException(status_code=403, detail="Solo pacientes pueden agendar citas")
-    return cita_controller.crear_cita(current_user["usuario_id"], request.medico_id, request.fecha, request.motivo)
+    return await cita_controller.crear_cita(current_user["usuario_id"], medico_id, fecha, hora, especialidad_id, imagenes)
 
 @router.get("/historial")
 async def get_historial_paciente(current_user: dict = Depends(decode_access_token), fecha: Optional[str] = None, rango: Optional[str] = None):
         usuario_id = current_user.get("usuario_id")
         if usuario_id is None or current_user["rol_id"] != 1:
-            raise HTTPException(status_code=401, detail="Usuario no autenticado o sin permisos")
+            raise HTTPException(status_code=403, detail="No tiene permisos para ver el historial de paciente")
         return cita_controller.get_historial_paciente(usuario_id=usuario_id, fecha=fecha, rango=rango)
-        
 
-@router.put("/datos-especificos", response_model=dict)
-async def actualizar_datos_especificos(request: DatosEspecificosRequest, current_user: dict = Depends(decode_access_token)):
+@router.get("/especialidades", response_model=dict)
+async def get_especialidades(current_user: dict = Depends(decode_access_token)):
     if current_user["rol_id"] != 1:
-        raise HTTPException(status_code=403, detail="Solo pacientes pueden actualizar datos específicos")
-    return usuario_controller.actualizar_datos_especificos(current_user["usuario_id"], request.dict())
+        raise HTTPException(status_code=403, detail="No tiene permisos para ver las especialidades")
+    return cita_controller.get_especialidades()
+    
+
+@router.get("/medicos", response_model=dict)
+async def get_medicos(current_user: dict = Depends(decode_access_token), especialidad_id: int = None):
+    if current_user["rol_id"] != 1:
+        raise HTTPException(status_code=403, detail="No tiene permisos para ver los médicos")
+    return cita_controller.get_medicos(especialidad_id)
