@@ -17,7 +17,7 @@ async def get_citas_profesional(current_user: dict = Depends(decode_access_token
         raise HTTPException(status_code=403, detail="Solo profesionales de la salud pueden ver citas")
     return controller.get_citas_profesional()
 
-@router.post("/citas/aprobar", response_model=dict)
+@router.patch("/citas/aprobar", response_model=dict)
 async def aprobar_cita(request: AprobarCitaRequest, current_user: dict = Depends(decode_access_token)):
     if current_user["rol_id"] != 3:
         raise HTTPException(status_code=403, detail="Solo profesionales de la salud pueden aprobar citas")

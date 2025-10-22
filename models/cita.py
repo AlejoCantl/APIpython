@@ -63,9 +63,11 @@ class CitaModel:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                SELECT c.id, c.fecha_cita AS fecha, u.nombre || ' ' || u.apellido AS paciente
+                SELECT c.id, c.fecha_cita AS fecha, u.nombre || ' ' || u.apellido AS paciente, u.identificacion, c.hora_cita as hora, u2.nombre || ' ' || u2.apellido AS medico, e.nombre AS especialidad
                 FROM cita c
                 JOIN usuario u ON c.usuario_paciente_id = u.id
+                JOIN usuario u2 ON c.usuario_medico_id = u2.id
+                JOIN especialidad e ON c.especialidad_id = e.id
                 WHERE c.estado = 'Pendiente'
                 """
             cursor.execute(query)
@@ -241,10 +243,13 @@ class CitaModel:
                 cursor = conn.cursor()
                 query = """
                 SELECT u.nombre, u.apellido, u.correo, u.identificacion, u.direccion, u.ciudad, u.pais,
-                    p.tipo_paciente, p.peso, p.altura, p.enfermedades
+                    p.tipo_paciente, p.peso, p.talla, p.enfermedades, c.fecha_cita as fecha, c.hora_cita as hora, e.nombre AS especialidad,
+                    u2.nombre || ' ' || u2.apellido AS medico
                 FROM cita c
                 JOIN usuario u ON c.usuario_paciente_id = u.id
+                JOIN usuario u2 ON c.usuario_medico_id = u2.id
                 JOIN paciente p ON u.id = p.usuario_id
+                JOIN especialidad e ON c.especialidad_id = e.id
                 WHERE c.id = %s
                 """
             cursor.execute(query, (cita_id,))
