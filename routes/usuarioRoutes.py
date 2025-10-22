@@ -11,6 +11,7 @@ class LoginRequest(BaseModel):
     contrasena: str
 
 class UserProfile(BaseModel):
+    id: int
     nombre: str
     apellido: str
     correo: str

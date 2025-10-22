@@ -25,5 +25,6 @@ class UsuarioController:
             datos_especificos = self.model.get_medico_data(usuario_id) or {}
         elif user_data["rol_id"] == 3:  # Profesional de salud
             datos_especificos = self.model.get_profesional_data(usuario_id) or {}
+        user_data["id"] = usuario_id  # ← ¡ESTO ES LO QUE FALTABA!
         user_data["datos_especificos"] = datos_especificos
         return user_data
