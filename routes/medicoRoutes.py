@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from controllers.citaController import CitaController
+from controllers.medicoController import MedicoController
 from utils.auth import decode_access_token
 
 router = APIRouter()
-controller = CitaController()
+controller = MedicoController()
 
 class AtencionRequest(BaseModel):
     sintomas: str

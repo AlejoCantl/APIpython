@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from controllers.citaController import CitaController
+from controllers.profesionalSaludControler import ProfesionalSaludController
 from utils.auth import decode_access_token
 
 router = APIRouter()
-controller = CitaController()
+controller = ProfesionalSaludController()
 
 class AprobarCitaRequest(BaseModel):
     cita_id: int
