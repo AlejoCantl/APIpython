@@ -13,6 +13,7 @@ class PacienteController:
         if not os.path.exists(IMAGENES_DIR):
             os.makedirs(IMAGENES_DIR)
         self.model = PacienteModel()
+        self.yolo = RoboflowYOLO()
 
     async def _guardar_imagen_en_disco(self, imagen: UploadFile) -> str:
         """Guarda la imagen en el disco con un nombre seguro y devuelve la ruta."""
@@ -68,16 +69,14 @@ class PacienteController:
         # 2. Crear Cita en BD y obtener cita_id
         # ⚠️ Asegúrate que self.model.crear_cita devuelve el ID de la cita creada
         cita_id = self.model.crear_cita(usuario_id, medico_id, fecha, hora, especialidad_id)
-        yolo =  RoboflowYOLO()
-
         # 3. Procesar y guardar las imágenes
         if imagenes:
             for imagen in imagenes:
                 # Guardar en disco
                 ruta_guardada = await self._guardar_imagen_en_disco(imagen)
-                result_yolo = yolo.run_inference(image_path=ruta_guardada)
+                result_yolo = self.yolo.run_inference(image_path=ruta_guardada)
                 # Parsear resultados
-                result_yolo = yolo.parse_results(result_yolo)
+                result_yolo = self.yolo.parse_results(result_yolo)
                 # Registrar en BD
                 # ⚠️ Asumo que 'guardar_imagen_cita' registra la ruta en una tabla
                 self.model.guardar_imagen_cita(cita_id, ruta_imagen=ruta_guardada, resultado_yolo=result_yolo) 
