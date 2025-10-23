@@ -3,12 +3,11 @@ from pydantic import BaseModel
 from typing import Annotated, Optional
 from controllers.usuarioController import UsuarioController
 from controllers.pacienteController import PacienteController
-from controllers.citaController import CitaController
 from utils.auth import decode_access_token
 
 router = APIRouter()
 usuario_controller = UsuarioController()
-paciente_controller = CitaController()
+paciente_controller = PacienteController()
 
 class DatosEspecificosRequest(BaseModel):
     peso: float

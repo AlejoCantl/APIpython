@@ -160,3 +160,41 @@ class PacienteModel:
                 return cursor.fetchall()
         except psycopg2.Error as e:
             raise Exception(f"Error en la base de datos: {e}")
+        
+    def get_datos_cita_para_correo(self, cita_id: int) -> Dict:
+        """
+        Devuelve todos los datos necesarios para enviar cualquier correo relacionado con la cita.
+        """
+        try:
+            with db.get_connection_context() as conn:
+                cursor = conn.cursor()
+                query = """
+                    SELECT 
+                        c.fecha_cita AS fecha, c.hora_cita AS hora,
+                        p.correo AS paciente_correo,
+                        p.nombre AS paciente_nombre,
+                        p.apellido AS paciente_apellido,
+                        m.nombre || ' ' || m.apellido AS medico_nombre,
+                        e.nombre AS especialidad
+                    FROM cita c
+                    JOIN usuario p ON c.usuario_paciente_id = p.id
+                    JOIN usuario m ON c.usuario_medico_id = m.id
+                    JOIN especialidad e ON c.especialidad_id = e.id
+                    WHERE c.id = %s
+                """
+                cursor.execute(query, (cita_id,))
+                result = cursor.fetchone()
+                if not result:
+                    return {}
+                
+                return {
+                    "paciente_email": result["paciente_correo"],
+                    "paciente_nombre": f"{result['paciente_nombre']} {result['paciente_apellido']}".strip(),
+                    "medico_nombre": result["medico_nombre"],
+                    "fecha": result["fecha"].strftime("%Y-%m-%d"),
+                    "hora": result["hora"],
+                    "especialidad": result["especialidad"]
+                }
+        except Exception as e:
+            print(f"Error en get_datos_cita_para_correo: {e}")
+            return {}

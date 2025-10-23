@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 import shutil
 from utils.yolo_roboflow import RoboflowYOLO
+from utils.email import EmailService
 
 IMAGENES_DIR = "static/uploads/citas/"
 class PacienteController:
@@ -80,7 +81,24 @@ class PacienteController:
                 # Registrar en BD
                 # ⚠️ Asumo que 'guardar_imagen_cita' registra la ruta en una tabla
                 self.model.guardar_imagen_cita(cita_id, ruta_imagen=ruta_guardada, resultado_yolo=result_yolo) 
-        
+
+        # 4. Enviar correo de notificación
+        cita_datos = self.model.get_datos_cita_para_correo(cita_id)
+        paciente_email = cita_datos["paciente_email"]
+        if paciente_email:
+            try:
+                EmailService.enviar_correo_notificacion_cita_creada(
+                    paciente_email=paciente_email,
+                    paciente_nombre=cita_datos["paciente_nombre"],
+                    medico_nombre=cita_datos["medico_nombre"],
+                    fecha=cita_datos["fecha"],
+                    hora=cita_datos["hora"],
+                    especialidad=cita_datos["especialidad"]
+                )
+            except Exception as e:
+                print(f"Error al enviar correo de nueva cita: {e}")
+                # No fallamos la creación si falla el correo
+                pass
         return {"mensaje": "Cita pendiente de aprobación", "cita_id": cita_id}
     
     def get_historial_paciente(self, usuario_id: int, fecha: Optional[str] = None, rango: Optional[str] = None) -> dict:
