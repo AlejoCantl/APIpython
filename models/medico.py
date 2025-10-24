@@ -32,8 +32,8 @@ class MedicoModel:
                     query += " AND (u.nombre ILIKE %s OR u.apellido ILIKE %s)"
                     params.extend([f"%{nombre}%", f"%{nombre}%"])
                 if identificacion:
-                    query += " AND u.identificacion = %s"
-                    params.append(identificacion)
+                    query += " AND u.identificacion ILIKE %s"
+                    params.append(f"%{identificacion}%")
                 query += " ORDER BY c.fecha_cita DESC"
                 print(f"Query (medico): {query}")
                 print(f"Params (medico): {params}")
