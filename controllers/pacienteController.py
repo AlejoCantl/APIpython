@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import os
 import shutil
 from utils.yolo_roboflow import RoboflowYOLO
+from utils.yolo_local import LocalYOLO
 from utils.email import EmailService
 
 IMAGENES_DIR = "static/uploads/citas/"
@@ -64,7 +65,7 @@ class PacienteController:
         # 1. Validación de Cita (la que ya tenías)
         ultima_cita = self.model.get_ultima_cita(usuario_id)
         if ultima_cita and (datetime.fromisoformat(fecha).date() - ultima_cita["fecha"]) < timedelta(days=15):
-            raise HTTPException(status_code=400, detail="Debe haber al menos 15 días entre citas")
+            raise HTTPException(status_code=400, detail="Debe haber al menos 15 días entre citas.")
         
         # 2. Crear Cita en BD y obtener cita_id
         # ⚠️ Asegúrate que self.model.crear_cita devuelve el ID de la cita creada
@@ -75,6 +76,7 @@ class PacienteController:
                 # Guardar en disco
                 ruta_guardada = await self._guardar_imagen_en_disco(imagen)
                 result_yolo = self.yolo.run_inference(image_path=ruta_guardada)
+                print(f"Resultado YOLO para {ruta_guardada}: {result_yolo}")
                 # Parsear resultados
                 result_yolo = self.yolo.parse_results(result_yolo)
                 # Registrar en BD

@@ -1,6 +1,7 @@
 from models.medico import MedicoModel
 from typing import Dict, Optional
 from utils.yolo_roboflow import RoboflowYOLO
+#from utils.yolo_local import LocalYOLO
 from fastapi import HTTPException
 import os
 import shutil

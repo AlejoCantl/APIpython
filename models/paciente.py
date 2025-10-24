@@ -46,15 +46,14 @@ class PacienteModel:
         try:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
-                query = """SELECT c.fecha_cita AS fecha, u2.nombre || ' ' || u2.apellido AS medico, c.hora_cita, 
-                           h.diagnostico, h.recomendaciones, h.sistema, e.nombre AS especialidad
-                    FROM cita c
-                    JOIN historial_medico h ON c.id = h.cita_id
-                    JOIN especialidad e ON c.especialidad_id = e.id
-                    JOIN usuario u ON c.usuario_paciente_id = u.id
-                    JOIN usuario u2 ON c.usuario_medico_id = u2.id
-                    WHERE c.estado = 'Atendida' AND c.usuario_paciente_id = %s
-                    ORDER BY fecha DESC LIMIT 1"""
+                query = """
+                SELECT fecha_cita as fecha
+                FROM cita c
+                WHERE c.estado = 'Atendida' 
+                AND c.usuario_paciente_id = %s
+                ORDER BY c.fecha_cita DESC 
+                LIMIT 1
+                """
                 cursor.execute(query, (usuario_id,))
                 return cursor.fetchone() or {}
         except psycopg2.Error as e:
