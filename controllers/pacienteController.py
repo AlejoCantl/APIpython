@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import os
 import shutil
 from utils.yolo_roboflow import RoboflowYOLO
-from utils.yolo_local import LocalYOLO
+#from utils.yolo_local import LocalYOLO
 from utils.email import EmailService
 
 IMAGENES_DIR = "static/uploads/citas/"
