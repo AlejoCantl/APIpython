@@ -57,7 +57,7 @@ class MedicoController:
     
     def _guardar_imagen(self, imagen) -> str:
         # Similar a pacienteController
-        safe_name = f"atencion_{imagen.filename}"
+        safe_name = f"{imagen.filename}"
         path = os.path.join("static/uploads/atenciones/", safe_name)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
