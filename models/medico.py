@@ -12,7 +12,7 @@ class MedicoModel:
                 query = """
                     SELECT c.fecha_cita AS fecha, c.hora_cita, 
                            h.diagnostico, h.recomendaciones, h.sistema, e.nombre AS especialidad,
-                           u.nombre || ' ' || u.apellido AS paciente
+                           u.nombre || ' ' || u.apellido AS paciente, u.identificacion
                     FROM cita c
                     JOIN historial_medico h ON c.id = h.cita_id
                     JOIN especialidad e ON c.especialidad_id = e.id
@@ -87,7 +87,7 @@ class MedicoModel:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT c.id AS cita_id, c.fecha_cita, c.hora_cita, u.nombre || ' ' || u.apellido AS paciente,
+                    SELECT c.id AS cita_id, c.fecha_cita, c.hora_cita, u.nombre || ' ' || u.apellido AS paciente, u.id as paciente_id,
                            e.nombre AS especialidad
                     FROM cita c
                     JOIN usuario u ON c.usuario_paciente_id = u.id
@@ -117,7 +117,7 @@ class MedicoModel:
             with db.get_connection_context() as conn:
                 cursor = conn.cursor()
                 query = """
-                    SELECT u.nombre, u.apellido, u.correo, u.identificacion, p.peso, p.altura, p.enfermedades, p.tipo_paciente
+                    SELECT u.nombre || ' ' || u.apellido AS paciente, u.correo, u.identificacion, u.edad, p.peso, p.talla, p.enfermedades, p.tipo_paciente
                     FROM usuario u
                     LEFT JOIN paciente p ON u.id = p.usuario_id
                     WHERE u.id = %s
