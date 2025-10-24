@@ -8,7 +8,7 @@ from fastapi import HTTPException, status, Depends
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/Usuario/login")
 def create_access_token(data: dict):
