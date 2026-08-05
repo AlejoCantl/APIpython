@@ -8,14 +8,25 @@ from routes.medicoRoutes import router as medico_router
 from routes.profesionalSaludRoutes import router as profesional_salud_router
 
 load_dotenv()
-app = FastAPI()
+app = FastAPI(title="API de agendamientos")
+
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins if allowed_origins != ["*"] else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def health_root():
+    return {"status": "ok", "service": "api-agendamientos"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 app.include_router(usuario_router, prefix="/Usuario")
 app.include_router(paciente_router, prefix="/Paciente")
 app.include_router(medico_router, prefix="/Medico")
