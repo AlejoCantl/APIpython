@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from routes.usuarioRoutes import router as usuario_router
 from routes.pacienteRoutes import router as paciente_router
@@ -23,9 +23,17 @@ app.add_middleware(
 def health_root():
     return {"status": "ok", "service": "api-agendamientos"}
 
+@app.head("/")
+def head_root():
+    return Response(status_code=200)
+
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+@app.head("/health")
+def head_health():
+    return Response(status_code=200)
 
 app.include_router(usuario_router, prefix="/Usuario")
 app.include_router(paciente_router, prefix="/Paciente")
